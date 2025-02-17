@@ -10,25 +10,22 @@ class BallTracker:
         self.model = YOLO(model_path)
         
         # Khởi tạo Kalman Filter với 6 trạng thái và 2 đo lường
-        self.kf = cv2.KalmanFilter(6, 2)
-        self.kf.transitionMatrix = np.array([[1, 0, 1, 0, 0.1, 0],
-                                             [0, 1, 0, 1, 0, 0.1],
-                                             [0, 0, 1, 0, 0.3, 0],
-                                             [0, 0, 0, 1, 0, 0.3],
-                                             [0, 0, 0, 0, 0.2, 0],
-                                             [0, 0, 0, 0, 0, 0.2]], np.float32)
-        self.kf.measurementMatrix = np.array([[1, 0, 0, 0, 0, 0],
-                                              [0, 1, 0, 0, 0, 0]], np.float32)
+        self.kf = cv2.KalmanFilter(4, 2)
+        self.kf.transitionMatrix = np.array([[1, 0, 0.5, 0],
+                                             [0, 1, 0, 0.5],
+                                             [0, 0, 0.8, 0],
+                                             [0, 0, 0, 0.8]
+                                            ], np.float32)
+        self.kf.measurementMatrix = np.array([[1, 0, 0, 0],
+                                              [0, 1, 0, 0]], np.float32)
         self.kf.processNoiseCov = np.array([
-            [0.1, 0, 0.1, 0, 0.05, 0],
-            [0, 0.1, 0, 0.1, 0, 0.05],
-            [0.1, 0, 0.5, 0, 0.2, 0],
-            [0, 0.1, 0, 0.5, 0, 0.2],
-            [0.05, 0, 0.2, 0, 0.3, 0],
-            [0, 0.05, 0, 0.2, 0, 0.3]
+            [0.1, 0, 0.1, 0],
+            [0, 0.1, 0, 0.1],
+            [0.1, 0, 0.5, 0],
+            [0, 0.1, 0, 0.5]
         ], np.float32)
-        self.kf.measurementNoiseCov = np.array([[0.01, 0],
-                                                [0, 0.01]], np.float32)
+        self.kf.measurementNoiseCov = np.array([[0.1, 0],
+                                                [0, 0.1]], np.float32)
         self.last_prediction = None
 
         # Các biến Optical Flow
