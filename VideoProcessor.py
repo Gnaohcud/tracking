@@ -7,6 +7,8 @@ import numpy as np
 import json
 import os
 import torch  # để giải phóng bộ nhớ GPU nếu cần
+import gc
+
 
 def cv_to_qimage(cv_img):
     """Convert OpenCV image to QImage."""
@@ -123,9 +125,13 @@ class VideoProcessor(QObject):
             ball_track.append((None, None))
 
         # Đảm bảo ball_trajectory có số phần tử tương ứng với số frame đã xử lý
-        while self.current_frame > len(self.ball_trajectory):
-            self.ball_trajectory.append((None, None))
+        MAX_TRAJECTORY = 100  # Ví dụ, lưu 1000 frame mới nhất
         self.ball_trajectory.append(ball_track[-1])
+        if len(self.ball_trajectory) > MAX_TRAJECTORY:
+            self.ball_trajectory = self.ball_trajectory[-MAX_TRAJECTORY:]
+
+    
+
         x_track, y_track = self.pickle_vision.smooth_ball_track(self.ball_trajectory)
         if self.ball_trajectory[-1] == (None, None) and x_track[-1] is not None:
             self.ball_trajectory[-1] = (x_track[-1], y_track[-1])
@@ -183,7 +189,7 @@ class VideoProcessor(QObject):
             self.frames.append(frame)
             self.current_frame += 1
             # Giới hạn buffer xuống MAX_BUFFER frame để giảm bộ nhớ
-            MAX_BUFFER = 7
+            MAX_BUFFER = 3
             if len(self.frames) > MAX_BUFFER:
                 self.frames.pop(0)
         else:
@@ -206,6 +212,8 @@ class VideoProcessor(QObject):
         # Luôn dùng frame mới nhất trong buffer để hiển thị
         image = cv_to_qimage(self.frames[-1])
         self.gotImage.emit(self.current_frame, image)
+        if self.current_frame % 100 == 0:
+            gc.collect()
 
     @Slot()
     def get_prev_frame(self):
