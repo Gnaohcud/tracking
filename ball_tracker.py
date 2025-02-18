@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
+import torch
 
 class BallTracker:
     def __init__(self, model_path):
@@ -11,10 +12,10 @@ class BallTracker:
         
         # Khởi tạo Kalman Filter với 6 trạng thái và 2 đo lường
         self.kf = cv2.KalmanFilter(4, 2)
-        self.kf.transitionMatrix = np.array([[1, 0, 0.5, 0],
-                                             [0, 1, 0, 0.5],
-                                             [0, 0, 0.8, 0],
-                                             [0, 0, 0, 0.8]
+        self.kf.transitionMatrix = np.array([[1, 0, 0.3, 0],
+                                             [0, 1, 0, 0.3],
+                                             [0, 0, 0.5, 0],
+                                             [0, 0, 0, 0.5]
                                             ], np.float32)
         self.kf.measurementMatrix = np.array([[1, 0, 0, 0],
                                               [0, 1, 0, 0]], np.float32)
@@ -33,59 +34,62 @@ class BallTracker:
         self.prev_pts = None
                 # Biến đếm số frame liên tiếp không phát hiện bóng
         self.lost_frames = 0
-        self.max_lost_frames = 10  # Ngưỡng số frame mất tín hiệu
+        self.max_lost_frames = 15  # Ngưỡng số frame mất tín hiệu
+        
+        self.frame_counter = 0  # Biến đếm số lượng frame đã qua
 
-    # def interpolate_ball_positions(self, ball_positions_org):
-    #     ball_positions = [x.get(1, []) for x in ball_positions_org]
-    #     count = 0
-    #     for ball_position in ball_positions:
-    #         if ball_position:
-    #             count += 1
-    #     if count == 0:
-    #         return ball_positions_org
 
-    #     # Convert list thành dataframe
-    #     df_ball_positions = pd.DataFrame(ball_positions, columns=['x1', 'y1', 'x2', 'y2'])
+    def interpolate_ball_positions(self, ball_positions_org):
+        ball_positions = [x.get(1, []) for x in ball_positions_org]
+        count = 0
+        for ball_position in ball_positions:
+            if ball_position:
+                count += 1
+        if count == 0:
+            return ball_positions_org
 
-    #     # Nội suy các giá trị thiếu
-    #     df_ball_positions = df_ball_positions.interpolate()
-    #     df_ball_positions = df_ball_positions.bfill()
+        # Convert list thành dataframe
+        df_ball_positions = pd.DataFrame(ball_positions, columns=['x1', 'y1', 'x2', 'y2'])
 
-    #     ball_positions = [{1: x} for x in df_ball_positions.to_numpy().tolist()]
+        # Nội suy các giá trị thiếu
+        df_ball_positions = df_ball_positions.interpolate()
+        df_ball_positions = df_ball_positions.bfill()
 
-    #     return ball_positions
+        ball_positions = [{1: x} for x in df_ball_positions.to_numpy().tolist()]
 
-    # def get_ball_shot_frames(self, ball_positions):
-    #     ball_positions = [x.get(1, []) for x in ball_positions]
-    #     # Convert list thành dataframe
-    #     df_ball_positions = pd.DataFrame(ball_positions, columns=['x1', 'y1', 'x2', 'y2'])
+        return ball_positions
 
-    #     df_ball_positions['ball_hit'] = 0
-    #     df_ball_positions['mid_y'] = (df_ball_positions['y1'] + df_ball_positions['y2']) / 2
-    #     df_ball_positions['mid_y_rolling_mean'] = df_ball_positions['mid_y'].rolling(window=5, min_periods=1, center=False).mean()
-    #     df_ball_positions['delta_y'] = df_ball_positions['mid_y_rolling_mean'].diff()
-    #     minimum_change_frames_for_hit = 25
-    #     for i in range(1, len(df_ball_positions) - int(minimum_change_frames_for_hit * 1.2)):
-    #         negative_position_change = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[i+1] < 0
-    #         positive_position_change = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[i+1] > 0
+    def get_ball_shot_frames(self, ball_positions):
+        ball_positions = [x.get(1, []) for x in ball_positions]
+        # Convert list thành dataframe
+        df_ball_positions = pd.DataFrame(ball_positions, columns=['x1', 'y1', 'x2', 'y2'])
 
-    #         if negative_position_change or positive_position_change:
-    #             change_count = 0
-    #             for change_frame in range(i+1, i + int(minimum_change_frames_for_hit * 1.2) + 1):
-    #                 negative_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[change_frame] < 0
-    #                 positive_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[change_frame] > 0
+        df_ball_positions['ball_hit'] = 0
+        df_ball_positions['mid_y'] = (df_ball_positions['y1'] + df_ball_positions['y2']) / 2
+        df_ball_positions['mid_y_rolling_mean'] = df_ball_positions['mid_y'].rolling(window=5, min_periods=1, center=False).mean()
+        df_ball_positions['delta_y'] = df_ball_positions['mid_y_rolling_mean'].diff()
+        minimum_change_frames_for_hit = 25
+        for i in range(1, len(df_ball_positions) - int(minimum_change_frames_for_hit * 1.2)):
+            negative_position_change = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[i+1] < 0
+            positive_position_change = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[i+1] > 0
 
-    #                 if negative_position_change and negative_position_change_following_frame:
-    #                     change_count += 1
-    #                 elif positive_position_change and positive_position_change_following_frame:
-    #                     change_count += 1
+            if negative_position_change or positive_position_change:
+                change_count = 0
+                for change_frame in range(i+1, i + int(minimum_change_frames_for_hit * 1.2) + 1):
+                    negative_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[change_frame] < 0
+                    positive_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[change_frame] > 0
 
-    #             if change_count > minimum_change_frames_for_hit - 1:
-    #                 df_ball_positions['ball_hit'].iloc[i] = 1
+                    if negative_position_change and negative_position_change_following_frame:
+                        change_count += 1
+                    elif positive_position_change and positive_position_change_following_frame:
+                        change_count += 1
 
-    #     frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit'] == 1].index.tolist()
+                if change_count > minimum_change_frames_for_hit - 1:
+                    df_ball_positions['ball_hit'].iloc[i] = 1
 
-    #     return frame_nums_with_ball_hits
+        frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit'] == 1].index.tolist()
+
+        return frame_nums_with_ball_hits
 
     # def detect_frames(self, frames, read_from_stub=False, stub_path=None):
         
@@ -108,35 +112,54 @@ class BallTracker:
     #     return ball_detections
 
     def detect_frame(self, frame):
-        results = self.model.predict(frame, conf=0.3, verbose=False)[0]
+        self.frame_counter += 1  # Tăng biến đếm mỗi khi gọi detect_frame
+
         ball_dict = {}
-        if len(results.boxes) > 0:
-            # Reset counter vì có phát hiện bóng
-            self.lost_frames = 0
-            
-            # Lấy bbox đầu tiên (hoặc có thể xử lý hợp nhất nhiều bbox nếu cần)
-            result = results.boxes.xyxy.tolist()[0]
-            ball_dict[1] = result
-            # Cập nhật Kalman Filter với đo lường từ YOLO
-            self.kalman_update(result)
-            # Cập nhật Optical Flow với khung hình hiện tại và vị trí trung tâm
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            x1, y1, x2, y2 = result[:4]
-            cx = (x1 + x2) / 2.0
-            cy = (y1 + y2) / 2.0
-            self.prev_frame = gray
-            self.prev_pts = np.array([[[cx, cy]]], dtype=np.float32)
-        else:
-            self.lost_frames += 1
-            if self.lost_frames >= self.max_lost_frames:
-                # Nếu mất bóng quá nhiều frame, không trả về bbox
-                ball_dict = {}
+
+        # Nếu là frame thứ 2 trong cặp (frame chẵn)
+        if self.frame_counter % 2 == 0:
+            results = self.model.predict(frame, conf=0.3, verbose=False)[0]
+            torch.cuda.empty_cache()
+            if len(results.boxes) > 0:
+                # Reset counter vì có phát hiện bóng
+                self.lost_frames = 0
+
+                # Lấy bbox đầu tiên (hoặc có thể xử lý hợp nhất nhiều bbox nếu cần)
+                result = results.boxes.xyxy.tolist()[0]
+                ball_dict[1] = result
+                # Cập nhật Kalman Filter với đo lường từ YOLO
+                self.kalman_update(result)
+                
+                # Cập nhật Optical Flow với khung hình hiện tại và vị trí trung tâm
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                x1, y1, x2, y2 = result[:4]
+                cx = (x1 + x2) / 2.0
+                cy = (y1 + y2) / 2.0
+                self.prev_frame = gray
+                self.prev_pts = np.array([[[cx, cy]]], dtype=np.float32)
+
             else:
-                # Dự đoán vị trí bóng qua Kalman + Optical Flow
-                predicted_bbox = self.kalman_predict(frame)
-                # (Có thể thêm kiểm tra tọa độ: nếu dự đoán quá sát biên, bỏ qua)
-                ball_dict[1] = predicted_bbox
+                # Nếu không phát hiện bóng
+                self.lost_frames += 1
+                if self.lost_frames >= self.max_lost_frames:
+                    # Nếu mất bóng quá nhiều frame, không trả về bbox
+                    ball_dict = {}
+                else:
+                    # Dự đoán vị trí bóng qua Kalman + Optical Flow
+                    predicted_bbox = self.kalman_predict(frame)
+                    ball_dict[1] = predicted_bbox
+        else:
+            # Nếu là frame lẻ, chỉ dự đoán vị trí bóng
+                self.lost_frames += 1
+                if self.lost_frames >= self.max_lost_frames:
+                    # Nếu mất bóng quá nhiều frame, không trả về bbox
+                    ball_dict = {}
+                else:
+                    # Dự đoán vị trí bóng qua Kalman + Optical Flow
+                    predicted_bbox = self.kalman_predict(frame)
+                    ball_dict[1] = predicted_bbox
         return ball_dict
+
 
     def kalman_update(self, result):
         # result: [x1, y1, x2, y2, ...]
@@ -168,7 +191,7 @@ class BallTracker:
                 new_point = next_pts[0][0]
                 pred_point = np.array([self.last_prediction[0][0], self.last_prediction[1][0]])
                 distance = np.linalg.norm(pred_point - new_point)
-                if distance < 50:  # Nếu kết quả Optical Flow đáng tin cậy
+                if distance < 30:  # Nếu kết quả Optical Flow đáng tin cậy
                     measurement = np.array([[np.float32(new_point[0])], [np.float32(new_point[1])]])
                     self.kf.correct(measurement)
             self.last_prediction = self.kf.predict()[:2]
