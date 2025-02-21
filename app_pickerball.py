@@ -2,12 +2,13 @@ import sys
 import cv2
 import torch
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QFileDialog
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import QTimer, QTime
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QFileDialog
+from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtCore import QTimer, QTime
 from ultralytics import YOLO
 import time
 import math
+
 print("CUDA available:", torch.cuda.is_available())
 if torch.cuda.is_available():
     print("PyTorch CUDA version:", torch.version.cuda)
@@ -16,7 +17,7 @@ else:
     print("No GPU found or not properly configured.")
 
 # Load YOLO model
-model = YOLO("G:/pickerball/yolopickleball5.onnx")
+model = YOLO("G:/pickerball/yolopickleball5.engine")
 
 def merge_nearby_boxes(detections, merge_threshold=50):
     merged_boxes = []
@@ -56,13 +57,13 @@ class KalmanTracker:
     def __init__(self):
         self.kf = cv2.KalmanFilter(6, 2)  # [x, y, dx, dy, ddx, ddy] -> [x, y]
         self.kf.transitionMatrix = np.array([[1, 0, 1, 0, 0.1, 0],  
-                                            [0, 1, 0, 1, 0, 0.1],  
-                                            [0, 0, 1, 0, 0.3, 0],  
-                                            [0, 0, 0, 1, 0, 0.3],  
-                                            [0, 0, 0, 0, 0.2, 0],  
-                                            [0, 0, 0, 0, 0, 0.2]], np.float32)
+                                               [0, 1, 0, 1, 0, 0.1],  
+                                               [0, 0, 1, 0, 0.3, 0],  
+                                               [0, 0, 0, 1, 0, 0.3],  
+                                               [0, 0, 0, 0, 0.2, 0],  
+                                               [0, 0, 0, 0, 0, 0.2]], np.float32)
         self.kf.measurementMatrix = np.array([[1, 0, 0, 0, 0, 0],  
-                                            [0, 1, 0, 0, 0, 0]], np.float32)
+                                              [0, 1, 0, 0, 0, 0]], np.float32)
         
         self.kf.processNoiseCov = np.array([
             [0.1, 0, 0.1, 0, 0.05, 0],  
@@ -73,12 +74,6 @@ class KalmanTracker:
             [0, 0.05, 0, 0.2, 0, 0.3]
         ], np.float32)
 
-  
-        # self.kf.processNoiseCov = np.array([[0.1, 0, 0.1, 0],  
-        #                                     [0, 0.1, 0, 0.1],  
-        #                                     [0.1, 0, 1.0, 0],  
-        #                                     [0, 0.1, 0, 1.0]], np.float32)
-
         self.kf.measurementNoiseCov = np.array([[0.01, 0],  
                                                 [0, 0.01]], np.float32)
 
@@ -86,6 +81,7 @@ class KalmanTracker:
 
         self.prev_frame = None
         self.prev_pts = None
+
     def predict(self):
         prediction = self.kf.predict()
         self.last_prediction = prediction[:2]  # [x, y]
@@ -94,6 +90,7 @@ class KalmanTracker:
     def update(self, x, y):
         measurement = np.array([[np.float32(x)], [np.float32(y)]])
         self.kf.correct(measurement)
+
     def update_with_optical_flow(self, frame):
         if self.prev_frame is None or self.prev_pts is None:
             self.prev_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -109,6 +106,7 @@ class KalmanTracker:
         self.prev_frame = next_frame
         self.prev_pts = next_pts
         return self.last_prediction
+
 # Main YOLO Application
 class YOLOApp(QMainWindow):
     def __init__(self):
@@ -234,7 +232,6 @@ class YOLOApp(QMainWindow):
                 w_pred, h_pred = 10, 10
                 cv2.rectangle(frame, (x_pred, y_pred), (x_pred + w_pred, y_pred + h_pred), (0, 0, 255), 2)
 
-
         if self.mode == 2:  # YOLO + Kalman + optical flow
             if detections:
                 x, y, w, h = detections[0]
@@ -266,4 +263,4 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = YOLOApp()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
