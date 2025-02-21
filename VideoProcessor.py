@@ -109,13 +109,10 @@ class VideoProcessor(QObject):
         self.current_frame = 0  # reset số frame đã xử lý
         self.processNextFrame()
 
-    @Slot()
+        
+    @Slot(str)
     def trackBallTrajectory(self):
-        # Dùng frame mới nhất trong buffer để tracking thay vì self.frames[self.current_frame]
-        if not self.frames:
-            print("Không có frame trong buffer để tracking.")
-            return
-
+        # Dùng frame mới nhất trong buffer để tracking
         ball_track = []
         ball2 = self.pickle_vision.track_ball2(self.frames[-1])
         if ball2:
@@ -125,32 +122,64 @@ class VideoProcessor(QObject):
             ball_track.append((None, None))
 
         # Đảm bảo ball_trajectory có số phần tử tương ứng với số frame đã xử lý
-        MAX_TRAJECTORY = 100  # Ví dụ, lưu 1000 frame mới nhất
+        while len(self.frames) > len(self.ball_trajectory):
+            self.ball_trajectory.append((None, None))
+
+        # Cập nhật ball_trajectory với điểm mới nhất
         self.ball_trajectory.append(ball_track[-1])
-        if len(self.ball_trajectory) > MAX_TRAJECTORY:
-            self.ball_trajectory = self.ball_trajectory[-MAX_TRAJECTORY:]
 
-    
+        MAX_TRAJECTORY = 30  # Số điểm cần có để chạy bounce detect
+        OVERLAP = 15         # Giữ lại 15 điểm cuối sau khi bounce detect
 
-        x_track, y_track = self.pickle_vision.smooth_ball_track(self.ball_trajectory)
-        if self.ball_trajectory[-1] == (None, None) and x_track[-1] is not None:
-            self.ball_trajectory[-1] = (x_track[-1], y_track[-1])
-        x_track = [x if x is not None else 0 for x in x_track]
-        y_track = [y if y is not None else 0 for y in y_track]
-        self.bounces = self.pickle_vision.bounce_detect(self.ball_trajectory)
-        self.bouncesDetected.emit([(frame_id, x_track[frame_id], y_track[frame_id])
-                                   for frame_id in self.bounces])
-        try:
-            self.ballDetected.emit(
-                self.current_frame,
-                self.ball_trajectory[-1][0],
-                self.ball_trajectory[-1][1]
-            )
-        except Exception as e:
-            print(f"ball track {self.current_frame} out of range: {len(self.ball_trajectory)} - {e}")
+        # Nếu số điểm đã đủ, tiến hành bounce detect
+        if len(self.ball_trajectory) >= MAX_TRAJECTORY:
+            # Làm mượt quỹ đạo
+            x_track, y_track = self.pickle_vision.smooth_ball_track(self.ball_trajectory)
+            if self.ball_trajectory[-1] == (None, None) and x_track[-1] is not None:
+                self.ball_trajectory[-1] = (x_track[-1], y_track[-1])
+            x_track = [x if x is not None else 0 for x in x_track]
+            y_track = [y if y is not None else 0 for y in y_track]
+
+            MAX_BOUNCES = 10  # Giới hạn số bounce tối đa
+            # Chạy bounce detect trên cửa sổ hiện tại
+            self.bounces = self.pickle_vision.bounce_detect(self.ball_trajectory)
+            if len(self.bounces) > MAX_BOUNCES:
+                self.bounces = self.bounces[-MAX_BOUNCES:]  # Chỉ giữ lại MAX_BOUNCES phần tử cuối
+
+            # Tính chỉ số global của bounce (cửa sổ ball_trajectory tương ứng với các frame từ global_frame_start đến hiện tại)
+            global_frame_start = self.current_frame - len(self.ball_trajectory) + 1
+            global_bounces = [global_frame_start + idx for idx in self.bounces]
+            if len(global_bounces) > MAX_BOUNCES:
+                global_bounces = global_bounces[-MAX_BOUNCES:]
+
+            self.bouncesDetected.emit([(gb, x_track[idx], y_track[idx]) for idx, gb in zip(self.bounces, global_bounces)])
+
+            try:
+                self.ballDetected.emit(
+                    self.current_frame,
+                    self.ball_trajectory[-1][0],
+                    self.ball_trajectory[-1][1]
+                )
+            except Exception as e:
+                print(f"ball track {self.current_frame} out of range: {len(self.ball_trajectory)} - {e}")
+
+            # Sau khi chạy bounce detect, giữ lại OVERLAP điểm cuối và xóa các điểm cũ
+            self.ball_trajectory = self.ball_trajectory[-OVERLAP:]
+        else:
+            # Nếu chưa đủ 30 điểm, chỉ cập nhật vị trí quả bóng
+            try:
+                self.ballDetected.emit(
+                    self.current_frame,
+                    self.ball_trajectory[-1][0],
+                    self.ball_trajectory[-1][1]
+                )
+            except Exception as e:
+                print(f"ball track {self.current_frame} out of range: {len(self.ball_trajectory)} - {e}")
+
         # Giải phóng bộ nhớ GPU nếu sử dụng GPU
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
 
     @Slot(int)
     def replay_frame(self, frame_id: int):
