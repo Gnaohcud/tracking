@@ -221,6 +221,14 @@ output_fr2_desk
 
 tham khảo link: https://gitlab.inria.fr/tangram/oa-slam 
 
+
+
+
+
+make[2]: *** No rule to make target '/usr/lib/aarch64-linux-gnu/libsqlite3.so', needed by '../lib/libORB_SLAM2.so'.  Stop.
+make[1]: *** [CMakeFiles/Makefile2:104: CMakeFiles/ORB_SLAM2.dir/all] Error 2
+make: *** [Makefile:91: all] Error 2
+
  
 
  
