@@ -229,6 +229,7 @@ make[2]: *** No rule to make target '/usr/lib/aarch64-linux-gnu/libsqlite3.so', 
 make[1]: *** [CMakeFiles/Makefile2:104: CMakeFiles/ORB_SLAM2.dir/all] Error 2
 make: *** [Makefile:91: all] Error 2
 
- 
+ ./oa-slam ../Vocabulary/ORBvoc.txt ../Cameras/TUM2.yaml ../Data/rgbd_dataset_freiburg2_desk/rgb.txt ../Data/detections_yolov5_tum_rgbd_fr2_desk.json null points+objects fr2
+
 
  
