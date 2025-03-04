@@ -1,0 +1,82 @@
+# EuRoC stereo model
+
+#==============#
+# Camera Model #
+#==============#
+
+# intrinsic parameters after stereo-rectification are written
+
+Camera.name: "OAK_D"
+Camera.setup: "stereo"
+Camera.model: "perspective"
+
+# new "rectified" matrices is the first three cols of the projection matrix which is calculated with cv::stereoRectify()
+# e.g. fx = P1[0][0] or P2[0][0], cx = P1[0][2] or P2[0][2]
+#      fy = P1[1][1] or P2[1][1], cy = P1[1][2] or P2[1][2]
+
+Camera.fx: 411.14892488870544
+Camera.fy: 411.14892488870544
+Camera.cx: 323.9406509399414
+Camera.cy: 207.20990371704102
+
+# there is no distortion after stereo rectification
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+Camera.k3: 0.0
+
+# focal_x_baseline is -P2[0][3] which is calculated with cv::stereoRectify()
+
+Camera.fps: 20.0
+Camera.cols: 640
+Camera.rows: 400
+Camera.focal_x_baseline: 30.60812815823195
+
+Camera.color_order: "Gray"
+
+#======================#
+# Stereo Rectification #
+#======================#
+
+# original intrinsic parameters (K, D) and stereo-recitification parameters (R)
+# matrices (K, R) are written in row-major order
+
+StereoRectifier.K_left: [405.1068728177381, 0.0, 331.27455846864365, 0.0, 405.0318290979684, 207.1156701216629, 0.0, 0.0, 1.0]
+StereoRectifier.D_left: [0.0175856966610956, -0.07607853935047511, -0.0007450660952684023, 0.001973742684976698, 0.0]
+StereoRectifier.R_left: [0.9997588487387684, 0.01181541120262002, 0.018510549063854246, -0.011850926576107477, 0.999928136892444, 0.0018101353799582706, -0.01848783134442933, -0.002029066021367567, 0.99982702653172]
+StereoRectifier.K_right: [406.30586506468995, 0.0, 325.502183689494, 0.0, 406.4031909290463, 206.31434368841676, 0.0, 0.0, 1.0]
+StereoRectifier.D_right: [0.013041928104121409, -0.06680612026395087, -0.0006416683625941927, -0.0012210013671644503, 0.0]
+StereoRectifier.R_right: [0.9999336625531068, 0.010610621347611395, 0.004481652345629501, -0.010601998150851728, 0.9999419085219243, -0.0019435063007670395, -0.004502013809264656, 0.0018958629036398998, 0.9999880687165781]
+
+#================#
+# ORB Parameters #
+#================#
+
+Feature.max_num_keypoints: 1500
+Feature.scale_factor: 1.2
+Feature.num_levels: 7
+Feature.ini_fast_threshold: 18
+Feature.min_fast_threshold: 7
+
+#========================#
+# Initializer Parameters #
+#========================#
+
+Initializer.num_min_triangulated_pts: 100
+
+#===========================#
+# PangolinViewer Parameters #
+#===========================#
+
+PangolinViewer.keyframe_size: 0.07
+PangolinViewer.keyframe_line_width: 1
+PangolinViewer.graph_line_width: 1
+PangolinViewer.point_size: 2
+PangolinViewer.camera_size: 0.08
+PangolinViewer.camera_line_width: 3
+PangolinViewer.viewpoint_x: 0
+PangolinViewer.viewpoint_y: -0.65
+PangolinViewer.viewpoint_z: -1.9
+PangolinViewer.viewpoint_f: 400
