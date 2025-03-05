@@ -232,4 +232,18 @@ make: *** [Makefile:91: all] Error 2
  ./oa-slam ../Vocabulary/ORBvoc.txt ../Cameras/TUM2.yaml ../Data/rgbd_dataset_freiburg2_desk/rgb.txt ../Data/detections_yolov5_tum_rgbd_fr2_desk.json null points+objects fr2
 
 
+
+
+
+./oa-slam ../Vocabulary/ORBvoc.txt ../Cameras/TUM2.yaml ../Data/rgbd_dataset_freiburg2_desk/rgb.txt ../Data/yolov5nu.onnx null points+objects fr2
+C++ version: 201703
+Warning !! Failed to open the file with ignore classes. No class will be ignore.
+[ERROR:0@0.192] global /home/techvico/opencv_build/opencv/modules/dnn/src/onnx/onnx_importer.cpp (906) handleNode DNN/ONNX: ERROR during processing node with 2 inputs and 1 outputs: [Reshape]:(/model.24/dfl/Reshape_output_0) from domain='ai.onnx'
+terminate called after throwing an instance of 'cv::Exception'
+  what():  OpenCV(4.5.5) /home/techvico/opencv_build/opencv/modules/dnn/src/onnx/onnx_importer.cpp:928: error: (-2:Unspecified error) in function 'handleNode'
+> Node [Reshape@ai.onnx]:(/model.24/dfl/Reshape_output_0) parse error: OpenCV(4.5.5) /home/techvico/opencv_build/opencv/modules/dnn/src/layers/reshape_layer.cpp:107: error: (-215:Assertion failed) total(srcShape, srcRange.start, srcRange.end) == maskTotal in function 'computeShapeByReshapeMask'
+> 
+Aborted (core dumped)
+
+
  
