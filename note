@@ -250,5 +250,7 @@ Aborted (core dumped)
 terminate called after throwing an instance of 'cv::Exception'
   what():  OpenCV(4.5.5) /home/techvico/opencv_build/opencv/modules/dnn/include/opencv2/dnn/shape_utils.hpp:170: error: (-215:Assertion failed) start <= (int)shape.size() && end <= (int)shape.size() && start <= end in function 'total'
 
-Aborted (core dumped)
+Aborted (core dumped)ov5$ python export.py --weights yolov5m.pt --include onnx --opset 12 --simplify --imgsz 320
+
 https://chatgpt.com/share/67c802c3-2680-8008-a882-df01e2c433d9 
+
