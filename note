@@ -246,4 +246,10 @@ terminate called after throwing an instance of 'cv::Exception'
 Aborted (core dumped)
 
 
+[ WARN:0@9.398] global /home/techvico/opencv_build/opencv/modules/dnn/src/dnn.cpp (1483) setUpNet DNN module was not built with CUDA backend; switching to CPU
+terminate called after throwing an instance of 'cv::Exception'
+  what():  OpenCV(4.5.5) /home/techvico/opencv_build/opencv/modules/dnn/include/opencv2/dnn/shape_utils.hpp:170: error: (-215:Assertion failed) start <= (int)shape.size() && end <= (int)shape.size() && start <= end in function 'total'
+
+Aborted (core dumped)
+
  
