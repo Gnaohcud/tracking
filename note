@@ -252,6 +252,8 @@ terminate called after throwing an instance of 'cv::Exception'
 
 Aborted (core dumped)ov5$ python export.py --weights yolov5m.pt --include onnx --opset 12 --simplify --imgsz 320
 https://drive.google.com/file/d/19iEqqPhI5i9Scp6LSdyODFCZm066Y3G2/view
+sudo ln -s /dev/video4 /dev/webcam_4
+
 
 https://chatgpt.com/share/67c802c3-2680-8008-a882-df01e2c433d9 
 
