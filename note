@@ -257,3 +257,88 @@ sudo ln -s /dev/video4 /dev/webcam_4
 
 https://chatgpt.com/share/67c802c3-2680-8008-a882-df01e2c433d9 
 
+
+
+
+
+
+/**
+ * oakd-test.cc
+ * 
+ * Chương trình đơn giản sử dụng DepthAI và OpenCV để mở kết nối với OAK-D,
+ * hiển thị stream video từ camera RGB và camera mono (trái).
+ *
+ * Yêu cầu:
+ *  - Cài đặt DepthAI (https://github.com/luxonis/depthai)
+ *  - Cài đặt OpenCV (phiên bản 3.0 trở lên)
+ *
+ * Biên dịch (ví dụ trên Linux):
+ *   g++ -std=c++17 oakd-test.cc -o oakd-test `pkg-config --cflags --libs opencv4` -ldepthai
+ */
+
+#include <iostream>
+#include <chrono>
+#include <opencv2/opencv.hpp>
+#include <depthai/depthai.hpp>
+
+int main() {
+    try {
+        // Tạo pipeline cho thiết bị DepthAI
+        dai::Pipeline pipeline;
+
+        // --- Cấu hình camera RGB ---
+        auto colorCam = pipeline.create<dai::node::ColorCamera>();
+        // Bạn có thể cấu hình độ phân giải, kích thước preview nếu cần
+        colorCam->setBoardSocket(dai::CameraBoardSocket::RGB);
+        // Sử dụng stream video để lấy frame chất lượng gốc
+        auto xoutColor = pipeline.create<dai::node::XLinkOut>();
+        xoutColor->setStreamName("color");
+        // Liên kết output video của colorCam với xoutColor
+        colorCam->video.link(xoutColor->input);
+
+        // --- Cấu hình camera mono (trái) ---
+        auto monoLeft = pipeline.create<dai::node::MonoCamera>();
+        monoLeft->setBoardSocket(dai::CameraBoardSocket::LEFT);
+        // Cấu hình độ phân giải của mono camera (có thể chọn độ phân giải khác)
+        monoLeft->setResolution(dai::MonoCameraProperties::SensorResolution::THE_400_P);
+        auto xoutMono = pipeline.create<dai::node::XLinkOut>();
+        xoutMono->setStreamName("mono");
+        // Liên kết output của monoLeft với xoutMono
+        monoLeft->out.link(xoutMono->input);
+
+        // Khởi tạo thiết bị với pipeline đã cấu hình
+        dai::Device device(pipeline);
+
+        // Lấy queue dữ liệu video từ các stream
+        auto colorQueue = device.getOutputQueue("color", 30, false);
+        auto monoQueue  = device.getOutputQueue("mono", 30, false);
+
+        std::cout << "Kết nối thành công. Nhấn ESC để thoát." << std::endl;
+
+        // Vòng lặp lấy và hiển thị frame từ các camera
+        while (true) {
+            // Lấy frame từ camera RGB
+            auto inColorFrame = colorQueue->get<dai::ImgFrame>();
+            cv::Mat colorFrame = inColorFrame->getCvFrame();
+
+            // Lấy frame từ camera mono
+            auto inMonoFrame = monoQueue->get<dai::ImgFrame>();
+            cv::Mat monoFrame = inMonoFrame->getCvFrame();
+
+            // Hiển thị các frame trên cửa sổ riêng biệt
+            cv::imshow("Camera RGB", colorFrame);
+            cv::imshow("Camera Mono (Trái)", monoFrame);
+
+            // Thoát nếu nhấn phím ESC (ASCII 27)
+            if (cv::waitKey(1) == 27) {
+                break;
+            }
+        }
+    } catch (const std::exception &e) {
+        std::cerr << "Lỗi: " << e.what() << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
