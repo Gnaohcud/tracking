@@ -342,3 +342,7 @@ int main() {
     return 0;
 }
 
+./oa-slam-OAK-stereo ../Vocabulary/ORBvoc.txt /home/orin/oa-slam/Cameras/OAKD_stereo_ORB2.yaml /home/orin/oa-slam/Data/yolov5n.onnx null points+objects
+
+
+
