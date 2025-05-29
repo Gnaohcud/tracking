@@ -351,3 +351,12 @@ https://app.roboflow.com/duchoang-0acbc/office-fqbdc/upload
 
 
 https://drive.google.com/drive/folders/1FwF4D2h7IQJWXxZx_NUrj4pIp_PsaaIE?usp=drive_link
+
+
+
+source /opt/ros/humble/setup.bash
+source ~/ros2_ws/install/setup.bash
+ros2 launch realsense2_camera rs_launch.py device_type:=d435i enable_gyro:=false enable_accel:=false
+
+ros2 run rqt_image_view rqt_image_view
+
