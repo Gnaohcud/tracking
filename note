@@ -342,7 +342,7 @@ int main() {
     return 0;
 }
 
-./oa-slam-OAK-stereo ../Vocabulary/ORBvoc.txt /home/orin/oa-slam/Cameras/D453i_scale_stereo_ORB2.yaml /home/orin/oa-slam/Data/yolov5n-seg.onnx null points+objects
+./oa-slam-OAK-stereo ../Vocabulary/ORBvoc.txt /home/orin/oa-slam/Cameras/D435i_scale_stereo_ORB2.yaml /home/orin/oa-slam/Data/yolov5n-seg.onnx null points+objects
 
 
 https://app.roboflow.com/duchoang-0acbc/office-fqbdc/upload
