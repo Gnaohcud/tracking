@@ -360,3 +360,9 @@ ros2 launch realsense2_camera rs_launch.py   device_type:=d435i   enable_color:=
 
 ros2 run rqt_image_view rqt_image_view
 
+./oa-slam-OAK-stereo ../Vocabulary/ORBvoc.txt /home/orin/oa-slam/Cameras/D435i_scale_stereo_ORB2.yaml /home/orin/oa-slam/Data/yolov5n-seg.onnx null points+objects Map
+
+
+./oa-slam_localization ../Vocabulary/ORBvoc.txt /home/orin/oa-slam/Cameras/D435i_scale_stereo_ORB2.yaml /home/orin/oa-slam/Data/yolov5n-seg.onnx null /home/orin/oa-slam/bin/Map/map_Map.yaml points+objects map_techvico 0
+
+
