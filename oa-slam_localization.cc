@@ -268,10 +268,34 @@ if (!left_reader->getLatestImage(imLeft) || !right_reader->getLatestImage(imRigh
         reloc_times.push_back(SLAM.relocalization_duration);
         reloc_status.push_back(SLAM.relocalization_status);
 
-        if (m.rows && m.cols)
-            poses[ni] = ORB_SLAM2::cvToEigenMatrix<double, float, 4, 4>(m);
-        else
-            poses.push_back(Eigen::Matrix4d::Identity());
+	if (m.rows && m.cols)
+	{
+	    Eigen::Matrix4d pose = ORB_SLAM2::cvToEigenMatrix<double, float, 4, 4>(m);
+	    poses.push_back(pose);  // 
+	
+	    //Publish PoseStamped
+	    geometry_msgs::msg::PoseStamped pose_msg;
+	    pose_msg.header.stamp = rclcpp::Time(static_cast<int64_t>(tframe * 1e9));
+	    pose_msg.header.frame_id = "map";
+	
+	    pose_msg.pose.position.x = pose(0, 3);
+	    pose_msg.pose.position.y = pose(1, 3);
+	    pose_msg.pose.position.z = pose(2, 3);
+	
+	    Eigen::Matrix3d R = pose.block<3,3>(0,0);
+	    Eigen::Quaterniond q(R);
+	
+	    pose_msg.pose.orientation.x = q.x();
+	    pose_msg.pose.orientation.y = q.y();
+	    pose_msg.pose.orientation.z = q.z();
+	    pose_msg.pose.orientation.w = q.w();				
+	
+	    pose_pub->publish(pose_msg);
+	}
+	else
+	{
+	    poses.push_back(Eigen::Matrix4d::Identity());  // ✅ Nếu không có pose, vẫn push vào vector
+	}
 
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
