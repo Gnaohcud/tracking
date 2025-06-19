@@ -100,6 +100,11 @@ int main(int argc, char **argv)
 auto left_reader = std::make_shared<ROS2ImageReader>("/camera/camera/infra1/image_rect_raw", "left_reader");
 auto right_reader = std::make_shared<ROS2ImageReader>("/camera/camera/infra2/image_rect_raw", "right_reader");
 
+auto node_pub = std::make_shared<rclcpp::Node>("oa_slam_pose_pub");
+auto pose_pub = node_pub->create_publisher<geometry_msgs::msg::PoseStamped>("/oa_slam/pose", 10);
+executor.add_node(node_pub);
+
+
 rclcpp::executors::MultiThreadedExecutor executor;
 executor.add_node(left_reader);
 executor.add_node(right_reader);
